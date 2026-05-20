@@ -72,12 +72,12 @@ const ES_DEFS = [
      inca_sector="agriculture"),
 
     (id="nat_tourism",   label="Nature-based recreation",    dir="Nature-based recreation",
-     file="nature_based_recreation_use_2018_million_euro.csv", unit="meur",
-     mac_eur=1.0,    # monetary
+     file="nature_based_recreation_use_2018_visits.csv", unit="k_visits",
+     mac_eur=0.05,   # million € per 1000 visits (≈ €50/visit welfare loss)
      inca_sector="services"),
 
     (id="hab_species",   label="Habitat and species maintenance", dir="Habitat and species maintencance",
-     file="habitat_and_species_maintencance_use_2018_million_euro.csv", unit="meur",
+     file="habitat_and_species_maintenance_use_2018_million_euro.csv", unit="meur",
      mac_eur=1.0,
      inca_sector="global_soc"),
 ]
