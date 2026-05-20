@@ -195,7 +195,9 @@ CSV.write(joinpath(RES_DIR, "shadow_costs_by_country.csv"), country_df)
 
 # Summary stats
 @info "\n=== MODEL RESULTS SUMMARY ==="
-@info "MRIO dimension: $N ($(length(unique(countries))) countries × 10 sectors)"
+n_nuts2 = length(unique(sec_df.region))
+n_countries = length(unique(countries))
+@info "MRIO dimension: $N ($n_nuts2 NUTS2 regions × 10 sectors, $n_countries countries)"
 @info "Ecosystem services: $E"
 @info "Total shadow cost embedded in final demand: $(round(dot(tau, f_total)/1e6, digits=2)) trillion €"
 @info "Of which transboundary: $(round(dot(foreign_tau, f_total)/1e6, digits=2)) trillion €"
