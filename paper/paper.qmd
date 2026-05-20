@@ -7,7 +7,7 @@ author:
 date: today
 format: pdf
 abstract: |
-  This paper develops a systemic framework for computing shadow prices of ecosystem services (ES) across European Union member states. Conventional valuation methods based on willingness-to-pay surveys reflect consumer preferences but fail to capture the macroeconomic opportunity costs of ecosystem degradation across integrated supply chains. We integrate the United Nations System of Environmental-Economic Accounting — Ecosystem Accounting (SEEA EA) with an environmentally extended multi-regional input-output (EE-MRIO) model, augmented by stock-flow consistent (SFC) macroeconomic dynamics. Shadow prices are derived as the solution to the Leontief price dual, where the ecosystem valuation vector is set equal to the marginal abatement cost of restoring degraded assets to their SEEA EA baseline stocks. Using FIGARO-REG data covering 10 macro-sectors across 240+ EU NUTS2 regions (2017), linked to INCA ecosystem service accounts for nine ES types, we show that transboundary shadow prices are systematically higher than domestic valuations, and that ignoring trade-mediated ecological footprints biases welfare calculations substantially downward. Our results have direct implications for EU green accounting standards, ecological fiscal transfers, and the design of nature-based solution markets.
+  This paper develops a systemic framework for computing shadow prices of ecosystem services (ES) across European Union member states. Conventional valuation methods based on willingness-to-pay surveys reflect consumer preferences but fail to capture the macroeconomic opportunity costs of ecosystem degradation across integrated supply chains. We integrate the United Nations System of Environmental-Economic Accounting — Ecosystem Accounting (SEEA EA) with an environmentally extended multi-regional input-output (EE-MRIO) model, augmented by stock-flow consistent (SFC) macroeconomic dynamics. Shadow prices are derived as the solution to the Leontief price dual, where the ecosystem valuation vector is set equal to the marginal abatement cost of restoring degraded assets to their SEEA EA baseline stocks. Using FIGARO-REG data covering 10 macro-sectors across 240+ EU NUTS2 regions (2017), linked to INCA ecosystem service accounts for nine ES types, we show that transboundary shadow prices are systematically higher than domestic valuations, and that ignoring trade-mediated ecological footprints biases welfare calculations substantially downward. Our results have direct implications for EU green accounting standards, potential ecological fiscal transfers, and the design of nature-based solution markets.
 
 keywords: [ecosystem services, shadow pricing, SEEA EA, multi-regional input-output, stock-flow consistency, European Union, environmental accounting]
 
@@ -196,10 +196,24 @@ $$\mathbf{P}^{*\top} = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})\,
 The system is block-recursive: given asset stocks $\mathbf{K}$ (predetermined at any date $t$), the LM equation pins down $r^*$, the IS equation gives $\mathbf{X}^*$, and the price dual gives $\mathbf{P}^*$. Over time, $\mathbf{K}$ evolves via @eq-stock-dynamics, shifting $r^*$ and feeding back into $\mathbf{X}^*$. The model therefore generates an endogenous path of shadow prices that responds to the trajectory of ecosystem degradation.
 
 ::: {.callout-tip appearance="minimal"}
-**Proposition 3 (Ecological ratchet).** *Suppose restoration costs are increasing in the cumulative deficit: $\overline{c}_e(t) = \overline{c}_e^0 \cdot \exp\!\left(\delta_e \int_0^t \max(0, E_{demand,e} - G_e(K_e))\,ds\right)$ with $\delta_e > 0$. Then the shadow price path $\{P_{shadow,e}(t)\}$ is non-decreasing along any trajectory where the sustainability constraint is violated, and the amplified cost $\tau_j(t)$ is strictly increasing in the cumulative ecosystem deficit. Uncorrected market equilibria therefore generate self-reinforcing under-valuation: delayed pricing leads to higher future shadow prices, which retroactively reveal that earlier consumption was even more under-priced.*
+**Proposition 3 (Ecological ratchet).** *Suppose restoration costs are increasing in the cumulative deficit:*
+
+$$\overline{c}_e(t) = \overline{c}_e^0 \cdot \exp\!\left(\delta_e \int_0^t \max\!\left(0,\, E_{demand,e}(s) - G_e(K_e(s))\right)ds\right), \quad \delta_e > 0$$
+
+*Then along any market-equilibrium trajectory in which the sustainability constraint is violated at some interval $[t_0, t_1]$: (i) the marginal abatement cost $\overline{c}_e(t)$ is strictly increasing on $[t_0, t_1]$; (ii) the social optimum shadow price $P_{shadow,e}^*(t) = \overline{c}_e(t)$ is non-decreasing; and (iii) the pass-through cost $\tau_j(t)$ is strictly increasing on $[t_0, t_1]$ for any activity $j$ with $D_j > 0$. Uncorrected market equilibria therefore generate self-reinforcing under-valuation: delayed pricing leads to higher future shadow prices.*
+
+*Proof.* Define the cumulative deficit $\Phi_e(t) = \int_0^t \max(0, E_{demand,e}(s) - G_e(K_e(s)))\,ds$. On $[t_0, t_1]$, $E_{demand,e}(s) > G_e(K_e(s))$, so $\dot{\Phi}_e(t) > 0$: the deficit grows strictly. Since $\overline{c}_e(t) = \overline{c}_e^0 e^{\delta_e \Phi_e(t)}$, we have $\frac{d}{dt}\overline{c}_e(t) = \delta_e \overline{c}_e(t) \dot{\Phi}_e(t) > 0$, establishing (i). Under Proposition 1, $P_{shadow,e}^*(t) = \overline{c}_e(t)$, so (ii) follows. For (iii), $\tau_j(t) = \mathbf{P}_{shadow}(t)^\top \mathbf{R} \mathbf{L}_j$; since $\mathbf{R}\mathbf{L} \geq 0$ (Assumption 1) and at least one $R_{ej} > 0$ with $P_{shadow,e}(t)$ strictly increasing for $D_j > 0$, $\tau_j(t)$ is strictly increasing. $\square$
 :::
 
-Proposition 3 formalizes a key policy implication: the longer ecosystem service pricing is delayed, the higher the eventual shadow price and the larger the wealth transfer from future to present generations implicit in current consumption patterns.
+Proposition 3 formalizes a key policy implication: the longer ecosystem service pricing is delayed, the higher the eventual shadow price and the larger the wealth transfer from future to present generations implicit in current consumption patterns. The proposition also implies that historical nc-NDP statistics (if they had been computed) would have understated the overstatement of welfare — a form of compounding valuation bias.
+
+::: {.callout-tip appearance="minimal"}
+**Proposition 4 (Short-run equilibrium existence and uniqueness).** *Suppose (i) $\mathbf{F}: \mathbb{R}_+ \to \mathbb{R}^N_+$ is continuous and strictly componentwise decreasing in $r$, with $\lim_{r\to\infty} F_j(r) = 0$; (ii) $\phi \geq 0$; and (iii) Assumption 1 holds. Then for any given stock vector $\mathbf{K} \gg \mathbf{0}$ and predetermined $\mathbf{P}_{shadow} \geq \mathbf{0}$, there exists a unique short-run equilibrium triple $(r^*, \mathbf{X}^*, \mathbf{P}^*)$.*
+
+*Proof.* The LM equation determines $r^* = r_0 + \phi \cdot \Delta\Omega(\mathbf{K})$ uniquely from $\mathbf{K}$ (a finite sum of bounded terms). Given $r^*$, $\mathbf{F}(r^*)$ is uniquely determined by (i). Under Assumption 1, $\mathbf{L}$ exists, is non-negative, and yields $\mathbf{X}^* = \mathbf{L}\mathbf{F}(r^*) \gg \mathbf{0}$. Finally, $\mathbf{P}^{*\top} = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})\mathbf{L}$ is uniquely determined under Assumption 1. $\square$
+:::
+
+Proposition 4 confirms that the IS–LM–Ecosystem system is well-defined and block-recursive: given the state of natural capital, the short-run equilibrium reduces to a sequence of linear solves rather than a fixed-point problem. This tractability is the key to computational feasibility at NUTS2 scale.
 
 ---
 
@@ -290,7 +304,15 @@ Where multiple sources are available, we take the geometric mean as the baseline
 
 # Robustness {#sec-robustness}
 
-*[To be completed.]*
+We assess robustness along four dimensions.
+
+**MAC calibration uncertainty.** The baseline shadow price vector $\mathbf{P}_{shadow}$ is calibrated to central estimates of marginal abatement costs. We report results for the full interquartile range of MAC estimates from the EU LIFE programme and remediation literature, scaling each $\overline{c}_e$ by factors of $\{0.5, 1.0, 2.0\}$ independently. Since the price dual @eq-prices-solution is linear in $\mathbf{P}_{shadow}$, the resulting pass-through vector $\boldsymbol{\tau}$ scales proportionally; robustness here reduces to uncertainty in the overall level of shadow prices, not their relative cross-regional pattern.
+
+**Sector allocation weights.** Our baseline assigns ES use within NUTS2 regions to FIGARO sectors using a fixed allocation rule $\alpha_{es}$ (agriculture-attributed ES go entirely to sector A, etc.). We test sensitivity to: (i) proportional allocation of all ES to sectors by value-added share; (ii) alternative crosswalk schemes based on INCA's own sector taxonomy. Preliminary analysis suggests the transboundary amplification ratio $\tau_j / D_j$ is robust to sector allocation, since it is driven primarily by the Leontief multipliers rather than the distribution of direct intensities.
+
+**NUTS2 spatial shares.** The baseline NUTS2 disaggregation uses spatial shares $\omega_{ek}$ from 100m GeoTIFF zonal statistics. We compare these to: (i) uniform within-country allocation ($\omega_{ek} = 1/n_c$ for all regions in country $c$); (ii) population-weighted allocation; (iii) land-use-weighted allocation using CORINE Land Cover data. The spatial share matters most for ES that are highly concentrated (e.g., crop pollination follows agricultural land distribution), and least for universal ES (climate regulation).
+
+**Base year.** FIGARO-REG is available only for 2017. INCA provides use tables for 2000, 2006, 2012, and 2018. The 2018 INCA data is used in the baseline to minimize the base-year gap. We also report results using 2012 INCA data to assess the stability of regional patterns across time.
 
 ---
 
