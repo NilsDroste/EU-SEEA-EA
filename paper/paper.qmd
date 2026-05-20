@@ -3,8 +3,11 @@ title: "Systemic Shadow Prices for Transboundary Ecosystem Services: An Environm
 author:
   - name: Nils Droste
     affiliation: University of Copenhagen
-    email: nils@droste.io
+    email: nd@ifro.ku.dk
 date: today
+format:
+  html:
+    code-fold: true
 abstract: |
   This paper develops a systemic framework for computing shadow prices of ecosystem services (ES) across European Union member states. Conventional valuation methods based on willingness-to-pay surveys reflect consumer preferences but fail to capture the macroeconomic opportunity costs of ecosystem degradation across integrated supply chains. We integrate the United Nations System of Environmental-Economic Accounting — Ecosystem Accounting (SEEA EA) with an environmentally extended multi-regional input-output (EE-MRIO) model, augmented by stock-flow consistent (SFC) macroeconomic dynamics. Shadow prices are derived as the solution to the Leontief price dual, where the ecosystem valuation vector is set equal to the marginal abatement cost of restoring degraded assets to their SEEA EA baseline stocks. Using FIGARO-REG data covering 64 sectors across 240+ EU NUTS2 regions, we show that transboundary shadow prices are systematically higher than domestic valuations, and that ignoring trade-mediated ecological footprints biases welfare calculations substantially downward. Our results have direct implications for EU green accounting standards, ecological fiscal transfers, and the design of nature-based solution markets.
 
@@ -48,61 +51,139 @@ This paper makes three contributions to the literature.
 
 # Theoretical Framework {#sec-theory}
 
-## The Multi-Regional Production System
+## Production Structure and Notation {#sec-prod}
 
-Let the EU economy consist of $n$ regions (member states or NUTS2 areas) and $s$ sectors per region, giving $N = ns$ total production activities. Denote by $\mathbf{X} \in \mathbb{R}^N_+$ the vector of gross outputs and by $\mathbf{A} \in \mathbb{R}^{N \times N}_+$ the matrix of technical input coefficients, where $A_{ij}$ is the value of input from activity $i$ required per unit of output of activity $j$. Final demand is $\mathbf{F}(r) \in \mathbb{R}^N_+$, which depends on the macroeconomic interest rate $r$ through investment demand (the IS curve).
-
-The Leontief quantity system gives:
+Let the EU economy consist of $n$ regions (member states or NUTS2 areas) and $s$ sectors per region, giving $N = ns$ total production activities. Denote by $\mathbf{X} \in \mathbb{R}^N_+$ the vector of gross outputs and by $\mathbf{A} \in \mathbb{R}^{N \times N}_+$ the matrix of technical input coefficients, where $A_{ij}$ is the value of input from activity $i$ required per unit of output of activity $j$. Final demand is $\mathbf{F}(r) \in \mathbb{R}^N_+$, which depends on the macroeconomic interest rate $r$ through investment demand (the IS curve). The Leontief quantity system gives:
 
 $$\mathbf{X} = (\mathbf{I} - \mathbf{A})^{-1} \mathbf{F}(r) \equiv \mathbf{L} \mathbf{F}(r)$$ {#eq-leontief}
 
-where $\mathbf{L} = (\mathbf{I} - \mathbf{A})^{-1}$ is the Leontief inverse, tracking direct and indirect input requirements across the full supply chain.
+where $\mathbf{L} = (\mathbf{I} - \mathbf{A})^{-1}$ is the Leontief inverse.
 
-## Biophysical Extension
+::: {.callout-note appearance="minimal"}
+**Assumption 1 (Productive economy).** The matrix $\mathbf{A}$ satisfies the Hawkins-Simon conditions: all leading principal minors of $(\mathbf{I} - \mathbf{A})$ are strictly positive. This ensures $\mathbf{L} \geq 0$ elementwise and that $\mathbf{X} \gg \mathbf{0}$ for any $\mathbf{F} \gg \mathbf{0}$.
+:::
 
-We augment the standard IO model with a biophysical coefficient matrix $\mathbf{R} \in \mathbb{R}^{E \times N}_+$, where $E$ is the number of distinct ecosystem service flows (e.g., freshwater provisioning, carbon sequestration, pollination). Element $R_{ej}$ denotes the physical volume of ecosystem service $e$ consumed per unit of gross output in activity $j$.
-
-Total ecosystem service demand is:
+We augment the quantity system with a biophysical coefficient matrix $\mathbf{R} \in \mathbb{R}^{E \times N}_+$, where $E$ is the number of distinct ecosystem service flows. Element $R_{ej}$ denotes the physical volume of ecosystem service $e$ consumed per unit of gross output in activity $j$. Total ecosystem service demand is:
 
 $$\mathbf{E}_{demand} = \mathbf{R} \mathbf{X} = \mathbf{R} \mathbf{L} \mathbf{F}(r)$$ {#eq-es-demand}
 
-The matrix $\mathbf{R}\mathbf{L}$ is the **ecosystem service multiplier matrix**: it captures the full upstream ecosystem service requirements — both direct and supply-chain embedded — of each unit of final demand.
+The matrix $\mathbf{M} \equiv \mathbf{R}\mathbf{L} \in \mathbb{R}^{E \times N}_+$ is the **ecosystem service multiplier matrix**: $M_{ej}$ gives the total ecosystem service requirement — direct and supply-chain embedded — per unit of final demand in activity $j$.
 
-## Ecosystem Asset Stock Dynamics
+## Ecosystem Asset Stocks and the Sustainability Constraint {#sec-assets}
 
-Following SEEA EA conventions, each ecosystem service flow $e$ is drawn from an underlying asset stock $K_e(t)$, measured in physical units (hectares, tonnes, species abundance index). Stock-flow consistency requires:
+Following SEEA EA conventions [@UN2021seea], each ecosystem service flow $e$ is drawn from an underlying asset stock $K_e(t) \geq 0$, measured in physical units. Stock-flow consistency requires:
 
-$$\dot{K}_e(t) = G_e(K_e) - E_{demand,e}(t)$$ {#eq-sfc}
+$$\dot{K}_e(t) = G_e(K_e) - E_{demand,e}(t) + \mu_e(t)$$ {#eq-sfc}
 
-where $G_e(K_e)$ is the natural regeneration function (concave in $K_e$, with maximum sustainable yield at $K_e^*$). If demand persistently exceeds regeneration, the asset stock declines and eventually collapses.
+where $G_e : \mathbb{R}_+ \to \mathbb{R}_+$ is the natural regeneration function and $\mu_e(t) \geq 0$ is active restoration effort (abatement). We assume $G_e$ is concave and attains its maximum sustainable yield at $K_e^*$. We define the **SEEA baseline stock** $\bar{K}_e$ as the opening physical stock in the reference period. The sustainability constraint requires asset stocks to remain non-declining:
 
-We define the **baseline stock** $\bar{K}_e$ as the SEEA EA opening stock in the reference year. The sustainable constraint is $E_{demand,e} \leq G_e(\bar{K}_e)$ for all $e$. When this constraint binds, the economy must either reduce demand or bear the cost of active ecosystem restoration.
+$$\dot{K}_e(t) \geq 0 \iff E_{demand,e}(t) \leq G_e(K_e) + \mu_e(t) \quad \forall e$$ {#eq-sustainability}
 
-## The Macroeconomic Interest Rate Channel
+## The Market Failure {#sec-failure}
 
-Ecosystem asset degradation feeds back into the macroeconomy through the LM curve. Following SFC modeling conventions [@godley2007monetary], we treat ecosystem assets as a component of the national balance sheet. Severe degradation reduces the collateral value of natural capital, increases long-run sovereign risk, and raises money demand — pushing up $r$ and reducing investment-financed final demand $\mathbf{F}(r)$.
+In the unregulated market equilibrium, ecosystem services are unpriced. Firms choose output $\mathbf{X}$ to satisfy final demand at given prices, treating $\mathbf{R}$ as a free input. The resulting ecosystem service demand $\mathbf{E}^{mkt} = \mathbf{R}\mathbf{L}\mathbf{F}(r_0)$ need not satisfy @eq-sustainability. The market failure is twofold:
 
-Formally, we model:
+**Open-access externality.** No single firm bears the full cost of ecosystem stock depletion because ecosystem services are rival in consumption (drawn from a finite stock) but non-excludable in production — a classic open-access commons problem [@hardin1968tragedy].
 
-$$r = r_0 + \phi \sum_e \max\left(0, \frac{\bar{K}_e - K_e(t)}{\bar{K}_e}\right)$$ {#eq-interest-rate}
+**Transboundary externality.** Ecosystem assets are geographically fixed. When production in region $j$ draws on ecosystem services located in region $k \neq j$ via supply-chain linkages (captured by $L_{kj} > 0$), the external cost of depletion in $k$ accrues to firms in $j$ without any market mechanism to internalize it. This generates a fiscal externality across member states: the costs of ecosystem maintenance are borne locally in $k$, while productive gains flow to $j$.
 
-where $\phi > 0$ is the ecological risk premium. This closes the IS-LM loop: ecosystem degradation raises $r$, which dampens $\mathbf{F}(r)$, which feeds back into reduced demand for ecosystem services via @eq-es-demand.
+## The Social Planner's Problem and Shadow Prices {#sec-planner}
 
-## The Dual Shadow Price System
+A benevolent social planner chooses final demand $\mathbf{F}$ and restoration effort $\boldsymbol{\mu} \geq \mathbf{0}$ to maximize aggregate welfare $\mathcal{W}(\mathbf{F})$ — a strictly increasing, concave function of final demand — subject to production feasibility, sustainability, and a budget constraint on restoration expenditure.
 
-The Leontief price dual gives the equilibrium cost structure of the economy. Production prices must cover all primary input costs:
+Let $c_e(\mu_e)$ denote the (convex, increasing) cost of restoration effort $\mu_e$ for ecosystem $e$. The planner's static problem is:
+
+$$\max_{\mathbf{F},\, \boldsymbol{\mu} \geq \mathbf{0}} \quad \mathcal{W}(\mathbf{F}) - \boldsymbol{\gamma}^\top \mathbf{c}(\boldsymbol{\mu})$$ {#eq-planner}
+
+subject to:
+
+$$\mathbf{R} \mathbf{L} \mathbf{F} \leq \mathbf{G}(\bar{\mathbf{K}}) + \boldsymbol{\mu} \qquad [\boldsymbol{\lambda}]$$ {#eq-sust-constraint}
+
+$$\mathbf{F} \geq \mathbf{0}, \quad \boldsymbol{\mu} \geq \mathbf{0}$$ {#eq-nonnegativity}
+
+where $\mathbf{G}(\bar{\mathbf{K}}) = (G_e(\bar{K}_e))_{e=1}^E$ is the vector of maximum sustainable yields at the baseline stock, $\gamma > 0$ is the welfare weight on the numeraire, and $\boldsymbol{\lambda} \in \mathbb{R}^E_+$ is the vector of Lagrange multipliers on the sustainability constraints.
+
+The Lagrangian is $\mathcal{L} = \mathcal{W}(\mathbf{F}) - \boldsymbol{\gamma}^\top \mathbf{c}(\boldsymbol{\mu}) + \boldsymbol{\lambda}^\top \left[\mathbf{G}(\bar{\mathbf{K}}) + \boldsymbol{\mu} - \mathbf{R}\mathbf{L}\mathbf{F}\right]$.
+
+**First-order conditions.** For an interior solution in $\mathbf{F}$:
+
+$$\nabla_{\mathbf{F}} \mathcal{W}(\mathbf{F}^*) = \mathbf{L}^\top \mathbf{R}^\top \boldsymbol{\lambda}^*$$ {#eq-foc-demand}
+
+The left-hand side is the marginal welfare value of final demand; the right-hand side is the shadow cost of the ecosystem services required to produce it, compounded through all upstream supply-chain linkages. For restoration, the complementary slackness conditions give:
+
+$$\mu_e^* > 0 \implies \lambda_e^* = \gamma \cdot c_e'(\mu_e^*) \equiv \gamma \cdot \text{MAC}_e$$ {#eq-foc-restoration}
+
+The multiplier $\lambda_e^*$ equals the marginal abatement cost when restoration is actively deployed. The planner's shadow price on ecosystem service $e$ is therefore $\lambda_e^* / \gamma = \text{MAC}_e$.
+
+## Shadow Price Identification and the Leontief Price Dual {#sec-dual}
+
+The Leontief price dual characterizes the full cost structure of production. If each ecosystem service carries shadow price $P_{shadow,e} = \lambda_e^* / \gamma$, producer prices must satisfy:
 
 $$\mathbf{P}^\top = \mathbf{P}^\top \mathbf{A} + \mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R}$$ {#eq-price-dual}
 
-where $\mathbf{P} \in \mathbb{R}^N_+$ is the producer price vector, $\mathbf{V} \in \mathbb{R}^N_+$ is the vector of conventional value added (wages, profits, taxes), and $\mathbf{P}_{shadow} \in \mathbb{R}^E_+$ is the shadow price vector for ecosystem services.
+where $\mathbf{V} \in \mathbb{R}^N_+$ is the vector of conventional value added (wages, profits, taxes net of subsidies). Solving:
 
-Solving for $\mathbf{P}$:
+$$\mathbf{P}^\top = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})\,\mathbf{L}$$ {#eq-prices-solution}
 
-$$\mathbf{P}^\top = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})(\mathbf{I} - \mathbf{A})^{-1} = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})\mathbf{L}$$ {#eq-prices-solution}
+This system has a unique solution under Assumption 1 and yields producer prices that are strictly positive whenever $\mathbf{V} \gg \mathbf{0}$ or $\mathbf{P}_{shadow} \gg \mathbf{0}$.
 
-**Identification of $\mathbf{P}_{shadow}$.**  We identify the shadow price vector by setting it equal to the marginal abatement cost: the minimum expenditure required to restore depleted stocks back to $\bar{K}_e$. This is observable from SEEA EA remediation cost accounts and habitat restoration cost data. Under this identification, $\mathbf{P}_{shadow}$ is not a preference parameter but a *physical cost parameter* — the price the economy would have to pay to maintain its productive capacity indefinitely.
+::: {.callout-tip appearance="minimal"}
+**Proposition 1 (MAC identification).** *Suppose restoration technology has constant unit costs: $c_e(\mu_e) = \overline{c}_e \mu_e$ for all $e$. Then at the social optimum, the shadow price vector satisfies $\mathbf{P}_{shadow}^* = (\overline{c}_1, \ldots, \overline{c}_E)^\top \equiv \mathbf{\overline{c}}$, i.e., the vector of marginal abatement costs. If restoration costs are strictly convex ($c_e'' > 0$), then $\mathbf{P}_{shadow}^* \geq \mathbf{\overline{c}}$ with equality only when abatement fully resolves the sustainability deficit.*
 
-**Transboundary pass-through.** The term $\mathbf{P}_{shadow}^\top \mathbf{R} \mathbf{L}$ in @eq-prices-solution shows how ecosystem shadow costs propagate through supply chains. When a German automobile sector imports intermediate goods from a Spanish supplier that draws on water-stressed aquifers, the shadow cost of that aquifer depletion is passed through to the final German consumer price. This is the core mechanism linking ecosystem degradation in one member state to welfare costs in another.
+*Proof.* Under linear costs, the FOC @eq-foc-restoration gives $\lambda_e^* = \gamma \overline{c}_e$ for any $\mu_e^* > 0$. Dividing by $\gamma$ yields the result. Under convex costs, $c_e'(\mu_e^*)$ is increasing in $\mu_e^*$; since a binding sustainability constraint requires positive restoration, $\lambda_e^* / \gamma = c_e'(\mu_e^*) \geq c_e'(0) \equiv \overline{c}_e$. $\square$
+:::
+
+Under Proposition 1, empirically observable restoration costs (EU LIFE programme, national remediation accounts) directly identify $\mathbf{P}_{shadow}$, without requiring estimates of welfare weights or preference parameters. This shifts valuation from the demand side (WTP surveys) to the supply side (restoration cost engineering), aligning with the SEEA EA framework's cost-based valuation philosophy.
+
+## Transboundary Shadow Cost Pass-Through {#sec-passthrough}
+
+The term $\mathbf{P}_{shadow}^\top \mathbf{R} \mathbf{L}$ in @eq-prices-solution is the vector of **supply-chain-embedded ecosystem costs** per unit of final demand. Let $\boldsymbol{\tau} \equiv \mathbf{P}_{shadow}^\top \mathbf{R} \mathbf{L} \in \mathbb{R}^{1 \times N}$ denote this row vector. The $j$-th element $\tau_j$ is the full ecosystem shadow cost — direct plus upstream — of one unit of final demand in activity $j$.
+
+To decompose domestic from foreign components, partition the activity index as $j = (k, \sigma)$ where $k \in \{1, \ldots, n\}$ is the destination region and $\sigma \in \{1, \ldots, s\}$ is the sector. Similarly, write $\mathbf{R} = [\mathbf{R}^{(k)}]_{k}$ where $\mathbf{R}^{(k)}$ collects the columns of $\mathbf{R}$ belonging to region $k$. Then:
+
+$$\tau_{k\sigma} = \underbrace{\mathbf{P}_{shadow}^\top \mathbf{R}^{(k)}_{*\sigma}}_{\text{direct domestic}} + \underbrace{\sum_{k' \neq k} \mathbf{P}_{shadow}^\top \mathbf{R}^{(k')} \mathbf{L}^{(k'k)}_{*\sigma}}_{\text{transboundary upstream}}$$ {#eq-decomp}
+
+where $\mathbf{L}^{(k'k)}$ is the sub-block of the Leontief inverse giving the output requirements in region $k'$ per unit of final demand in region $k$.
+
+::: {.callout-tip appearance="minimal"}
+**Proposition 2 (Transboundary amplification).** *Let $\mathbf{D} \equiv \mathbf{P}_{shadow}^\top \mathbf{R}$ be the vector of direct ecosystem costs per unit of gross output. Then $\tau_j \geq D_j$ for all $j$, with strict inequality whenever $\sum_{i \neq j} D_i L_{ij} > 0$. That is, the supply-chain-embedded ecosystem cost weakly exceeds the direct cost, with strict amplification whenever upstream activities in other sectors or regions carry positive direct ecosystem costs.*
+
+*Proof.* By definition, $\tau_j = \sum_{i=1}^N D_i L_{ij}$. Since $\mathbf{L} = \mathbf{I} + \mathbf{A} + \mathbf{A}^2 + \cdots$ (Neumann series), $L_{jj} \geq 1$ and $L_{ij} \geq 0$ for all $i,j$ under Assumption 1. Therefore $\tau_j = D_j L_{jj} + \sum_{i \neq j} D_i L_{ij} \geq D_j$. Strict inequality holds iff $\sum_{i \neq j} D_i L_{ij} > 0$. $\square$
+:::
+
+Proposition 2 formalizes the intuition that single-region or direct-attribution approaches *systematically understate* the true ecosystem cost of production. The amplification factor for activity $j$ is $\tau_j / D_j = \sum_i D_i L_{ij} / D_j$, which depends on the upstream input structure and the spatial distribution of ecosystem intensities.
+
+**Decentralization.** The social optimum can be decentralized through a vector of Pigouvian taxes $\boldsymbol{\tau}$ levied on final demand, or equivalently through producer prices $\mathbf{P}^*$ that internalize $\mathbf{P}_{shadow}$ as a factor cost. In a multi-region setting, the appropriate instrument is a *border carbon adjustment* generalized to all ecosystem services: a levy on imports from regions whose upstream production draws on underpriced ecosystem assets abroad. The full tax vector $\boldsymbol{\tau}$ defined above is the correct rate.
+
+## The SFC–IS–LM Closure and Asset Dynamics {#sec-macro}
+
+Propositions 1 and 2 characterize shadow prices in a static setting. We embed them in a dynamic macro model by closing the system through asset stock dynamics and financial market feedbacks.
+
+**Asset dynamics.** Combining @eq-sfc and the sustainability constraint @eq-sust-constraint, the stock evolution under the social optimum is:
+
+$$\dot{K}_e = G_e(K_e) - (\mathbf{R}\mathbf{L}\mathbf{F})_e + \mu_e^* \geq 0$$ {#eq-stock-dynamics}
+
+At the sustainable steady state, $\dot{K}_e = 0$ and $E_{demand,e} = G_e(\bar{K}_e) + \mu_e^*$: demand equals regeneration plus restoration. Departures from this steady state — caused by demand shocks, technological change, or policy gaps — propagate via @eq-stock-dynamics and alter the binding MAC values and hence $\mathbf{P}_{shadow}$.
+
+**The LM channel.** Following @godley2007monetary and the natural capital balance sheet literature, we model ecosystem assets as a component of the national wealth account. Let $\Omega_k(t) = \sum_e P_{shadow,e} K_e^{(k)}(t)$ be the natural capital value of region $k$'s asset stocks at current shadow prices. Asset depletion reduces $\Omega_k$, impairs the balance sheet of sovereign and bank borrowers in region $k$, and raises the risk premium on long-term capital. The aggregate interest rate across EU regions satisfies:
+
+$$r(t) = r_0 + \phi \cdot \frac{1}{n}\sum_{k=1}^n \max\!\left(0,\, \frac{\bar{\Omega}_k - \Omega_k(t)}{\bar{\Omega}_k}\right)$$ {#eq-interest-rate}
+
+where $\phi > 0$ is the ecological risk premium parameter and $\bar{\Omega}_k$ is the baseline natural capital value. This specification is parsimonious but captures the essential feedback: degradation in any member state raises the common borrowing rate (reflecting EU financial market integration), which dampens investment demand $\mathbf{F}(r)$ through the IS curve, which in turn reduces total ecosystem demand $\mathbf{R}\mathbf{L}\mathbf{F}(r)$.
+
+**The IS–LM–Ecosystem equilibrium.** A full short-run equilibrium is a triple $(\mathbf{X}^*, \mathbf{P}^*, r^*)$ satisfying simultaneously:
+
+$$\mathbf{X}^* = \mathbf{L}\,\mathbf{F}(r^*) \tag{IS}$$
+$$r^* = r_0 + \phi \cdot \Delta\Omega(\mathbf{K}) \tag{LM}$$
+$$\mathbf{P}^{*\top} = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})\,\mathbf{L} \tag{Price dual}$$
+
+The system is block-recursive: given asset stocks $\mathbf{K}$ (predetermined at any date $t$), the LM equation pins down $r^*$, the IS equation gives $\mathbf{X}^*$, and the price dual gives $\mathbf{P}^*$. Over time, $\mathbf{K}$ evolves via @eq-stock-dynamics, shifting $r^*$ and feeding back into $\mathbf{X}^*$. The model therefore generates an endogenous path of shadow prices that responds to the trajectory of ecosystem degradation.
+
+::: {.callout-tip appearance="minimal"}
+**Proposition 3 (Ecological ratchet).** *Suppose restoration costs are increasing in the cumulative deficit: $\overline{c}_e(t) = \overline{c}_e^0 \cdot \exp\!\left(\delta_e \int_0^t \max(0, E_{demand,e} - G_e(K_e))\,ds\right)$ with $\delta_e > 0$. Then the shadow price path $\{P_{shadow,e}(t)\}$ is non-decreasing along any trajectory where the sustainability constraint is violated, and the amplified cost $\tau_j(t)$ is strictly increasing in the cumulative ecosystem deficit. Uncorrected market equilibria therefore generate self-reinforcing under-valuation: delayed pricing leads to higher future shadow prices, which retroactively reveal that earlier consumption was even more under-priced.*
+:::
+
+Proposition 3 formalizes a key policy implication: the longer ecosystem service pricing is delayed, the higher the eventual shadow price and the larger the wealth transfer from future to present generations implicit in current consumption patterns.
 
 ---
 
