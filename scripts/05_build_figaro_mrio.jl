@@ -95,7 +95,7 @@ Z_V = Float64[]
 F   = zeros(N_eu, length(FINAL_DEMAND))
 fd_idx = Dict(f => i for (i, f) in enumerate(FINAL_DEMAND))
 
-n_skipped = 0
+n_skipped = Ref(0)
 open(RAW_PATH) do f
     readline(f)
     for (lnum, line) in enumerate(eachline(f))
@@ -111,18 +111,17 @@ open(RAW_PATH) do f
 
         row_key = (refreg, rowii)
         row_i = get(eu_idx, row_key, 0)
-        row_i == 0 && (n_skipped += 1; continue)  # origin not in EU NUTS2
+        row_i == 0 && (n_skipped[] += 1; continue)  # origin not in EU NUTS2
 
         if colii in SECTORS_10
             col_key = (cpreg, colii)
             col_j = get(eu_idx, col_key, 0)
-            col_j == 0 && (n_skipped += 1; continue)
+            col_j == 0 && (n_skipped[] += 1; continue)
             push!(Z_I, row_i)
             push!(Z_J, col_j)
             push!(Z_V, val)
         elseif colii in FINAL_DEMAND
             # F[i, fd] = final demand MET BY producer (refreg, rowii)
-            # row_i is already the index for (refreg, rowii)
             fd_col = fd_idx[colii]
             F[row_i, fd_col] += val
         end
@@ -131,7 +130,7 @@ open(RAW_PATH) do f
     end
 end
 
-@info "Skipped $n_skipped rows (non-EU origins/destinations)"
+@info "Skipped $(n_skipped[]) rows (non-EU origins/destinations)"
 
 Z = sparse(Z_I, Z_J, Z_V, N_eu, N_eu)
 @info "Z matrix: $(size(Z)), nnz = $(nnz(Z))"
