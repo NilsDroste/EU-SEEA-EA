@@ -12,7 +12,7 @@ Implements Propositions 1–4 from the theoretical framework:
 Run after scripts 05 and 06 have populated data/processed/.
 """
 
-using CSV, DataFrames, SparseArrays, LinearAlgebra
+using CSV, DataFrames, SparseArrays, LinearAlgebra, Statistics
 using Pkg; Pkg.activate(joinpath(@__DIR__, ".."))
 
 const PROC_DIR = joinpath(@__DIR__, "..", "data", "processed")

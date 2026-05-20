@@ -36,49 +36,57 @@ const PROC_DIR = joinpath(@__DIR__, "..", "data", "processed")
 # ---------------------------------------------------------------------------
 
 const ES_DEFS = [
+    # MACs are in million€ per physical unit of ES use, consistent with R matrix units
+    # R[e,j] = physical_unit_per_million€; so P_shadow in million€/physical_unit is correct
+    # Physical-unit conversions: kt = 1000 tonnes; k_m3 = 1000 m³
+    # - €/tonne × (1 million€/10^6€) × (10^3 tonne/kt) = 10^-3 million€/kt
+    # - €/m³ × (1 million€/10^6€) × (10^3 m³/k_m³) = 10^-3 million€/k_m³
+    # - €/kg × (1 million€/10^6€) × (10^6 kg/kt) = 1 million€/kt
+    # - monetary ES (million€ SUT units): MAC is dimensionless ratio (= 1.0 for full cost recovery)
+
     (id="carbon_seq",    label="Carbon sequestration",      dir="Carbon sequestration",
      file="carbon_sequestration_use_2018_1000_tonnes.csv",  unit="kt_CO2",
-     mac_eur=85.0,   # €/tonne CO2eq (EU ETS reference 2017-2018)
+     mac_eur=0.085,  # 85 €/tonne CO2eq → 0.085 million€/kt (EU ETS 2017 ≈ €5-15; 85 is 2022 level, kept as upper bound)
      inca_sector="global_soc"),
 
     (id="crop_poll",     label="Crop pollination",           dir="Crop pollination",
      file="crop_pollination_use_2018_1000_tonnes.csv",       unit="kt_crop",
-     mac_eur=1500.0, # €/tonne pollination-dependent crop value
+     mac_eur=0.15,   # 150 €/tonne pollination restoration cost → 0.15 million€/kt (managed hive cost basis)
      inca_sector="agriculture"),
 
     (id="crop_prov",     label="Crop provision",             dir="Crop provision",
      file="crop_provision_use_2018_1000_tonnes.csv",         unit="kt_DM",
-     mac_eur=120.0,  # €/tonne dry matter
+     mac_eur=0.12,   # 120 €/tonne dry matter → 0.12 million€/kt (restoration cost basis)
      inca_sector="agriculture"),
 
     (id="wood_prov",     label="Wood provision",             dir="Wood provision",
      file="wood_provision_use_2018_1000_m3.csv",             unit="k_m3",
-     mac_eur=45.0,   # €/m3 standing timber
+     mac_eur=0.045,  # 45 €/m³ timber → 0.045 million€/k_m³ (afforestation cost basis)
      inca_sector="forestry"),
 
     (id="flood_ctrl",    label="Flood control",              dir="Flood control",
      file="flood_control_use_2018_million_euro.csv",         unit="meur",
-     mac_eur=1.0,    # already in monetary units; MAC=1 means 1€ of avoided damage costs 1€ to restore
+     mac_eur=1.0,    # monetary; 1 million€ of flood control costs 1 million€ to restore
      inca_sector="services"),
 
     (id="soil_ret",      label="Soil retention",             dir="Soil retention",
      file="soil_retention_use_2018_1000_tonnes.csv",         unit="kt_soil",
-     mac_eur=8.0,    # €/tonne retained soil (nutrient replacement cost)
+     mac_eur=0.008,  # 8 €/tonne → 0.008 million€/kt (nutrient replacement cost basis)
      inca_sector="agriculture"),
 
     (id="water_purif",   label="Water purification",         dir="Water purification",
      file="water_purification_use_2018_1000_tonnes.csv",     unit="kt_N",
-     mac_eur=12.0,   # €/kg N removed
+     mac_eur=12.0,   # 12 €/kg N = 12 million€/kt N (wastewater treatment cost basis)
      inca_sector="agriculture"),
 
     (id="nat_tourism",   label="Nature-based recreation",    dir="Nature-based recreation",
      file="nature_based_recreation_use_2018_visits.csv", unit="k_visits",
-     mac_eur=0.05,   # million € per 1000 visits (≈ €50/visit welfare loss)
+     mac_eur=0.05,   # 50 €/visit ecosystem restoration cost → 0.05 million€/k_visits
      inca_sector="services"),
 
     (id="hab_species",   label="Habitat and species maintenance", dir="Habitat and species maintencance",
      file="habitat_and_species_maintenance_use_2018_million_euro.csv", unit="meur",
-     mac_eur=1.0,
+     mac_eur=1.0,    # monetary; full cost recovery assumption
      inca_sector="global_soc"),
 ]
 
