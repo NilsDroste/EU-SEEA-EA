@@ -1,93 +1,115 @@
 """
-Script 03: Process INCA ecosystem service flow accounts and build the R matrix.
+Script 03: Download INCA ecosystem service accounts and prepare for R matrix construction.
 
-INCA (Integrated Natural Capital Accounting) provides ecosystem service
-Supply and Use tables aligned with SEEA EA conventions. These are the
-primary source for the biophysical coefficient matrix R (E×N).
+INCA (Integrated Natural Capital Accounting, JRC) provides:
+  - Supply and Use Tables (SUTs) for 8 ecosystem services at country level
+    (EU-27, years: 2000, 2006, 2012, 2018) → used to build R matrix
+  - High-resolution maps (GeoTIFFs) per NUTS2 region → for spatial disaggregation
 
-Data source: https://ec.europa.eu/eurostat (search: "ecosystem accounts")
-Contact: estat-environment@ec.europa.eu for NUTS2-disaggregated tables.
+Data access: All files are freely downloadable from the JRC FTP (no auth required).
 
-Supplementary sources:
-  - ICOS carbon fluxes: https://www.icos-cp.eu/ (API access available)
-  - EMEP air quality: https://www.emep.int/ (free download)
-  - European Forest Accounts (EFA): Eurostat / UNECE
+JRC Dataset IDs:
+  - SUTs (national, 2000-2018): https://data.jrc.ec.europa.eu/dataset/4cbd7c1e-6512-4ebe-8ca5-e08209cc3efb
+  - Maps (NUTS2, 2000-2021):    https://data.jrc.ec.europa.eu/dataset/d810c03e-535f-4f48-879e-ef26c7c61e24
 
 Outputs:
-  data/processed/R_matrix.csv         -- ecosystem intensity matrix (E×N)
-  data/processed/es_metadata.csv      -- ES labels and units
-  data/processed/mac_vector.csv       -- marginal abatement costs (€/unit)
+  data/raw/inca/SUTs_time_series_all.zip    (250KB, national SUTs — PRIMARY)
+  data/raw/inca/suts/                        (extracted SUT CSVs)
+  data/raw/inca/<ES>.zip                     (300-600MB each, NUTS2 maps — for spatial step)
+  data/processed/es_metadata.csv
+  → R matrix built by script 06_build_R_matrix.jl
+
+Run order: 03 → 06 → 04
 """
 
-using CSV, DataFrames, Statistics
+using Downloads
 using Pkg; Pkg.activate(joinpath(@__DIR__, ".."))
 
+const RAW_DIR  = joinpath(@__DIR__, "..", "data", "raw", "inca")
 const PROC_DIR = joinpath(@__DIR__, "..", "data", "processed")
+mkpath(RAW_DIR)
 mkpath(PROC_DIR)
 
 # ---------------------------------------------------------------------------
-# Ecosystem service taxonomy (aligned with SEEA EA / CICES v5.1)
+# PRIMARY: National SUT time series (250KB — always download this first)
 # ---------------------------------------------------------------------------
 
-const ES_TAXONOMY = [
-    ("prov_freshwater",    "Freshwater provisioning",         "m³/year"),
-    ("prov_timber",        "Timber provisioning",             "m³/year"),
-    ("prov_biomass",       "Wild-crop biomass provisioning",  "t DM/year"),
-    ("reg_carbon",         "Carbon sequestration & storage",  "t CO₂eq/year"),
-    ("reg_airquality",     "Air quality regulation",          "t PM₂.₅ avoided/year"),
-    ("reg_water_purif",    "Water purification",              "kg N removed/year"),
-    ("reg_pollination",    "Pollination",                     "index 0–1"),
-    ("reg_flood_control",  "Flood attenuation",               "m³ water retained/year"),
-    ("hab_species_hab",    "Species habitat provision",       "EQR index"),
-]
+const SUTS_URL = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_update/LATEST/SUTs_ES_ALL/SUTs_time_series_all.zip"
 
-# ---------------------------------------------------------------------------
-# Marginal abatement cost (MAC) placeholders
-# These will be replaced with empirical estimates from:
-#   - EU LIFE programme restoration costs
-#   - National habitat remediation assessments
-#   - Literature: Sauer & Wossink (2012)
-# ---------------------------------------------------------------------------
-
-const MAC_PLACEHOLDER = Dict(
-    "prov_freshwater"   => 0.50,   # €/m³
-    "prov_timber"       => 45.0,   # €/m³
-    "prov_biomass"      => 120.0,  # €/t DM
-    "reg_carbon"        => 85.0,   # €/t CO₂eq (EU ETS reference)
-    "reg_airquality"    => 30000.0, # €/t PM₂.₅
-    "reg_water_purif"   => 12.0,   # €/kg N
-    "reg_pollination"   => 1500.0, # €/index unit (per ha of pollinator habitat)
-    "reg_flood_control" => 0.10,   # €/m³ retention capacity
-    "hab_species_hab"   => 800.0,  # €/EQR unit (restoration cost proxy)
-)
-
-function build_es_metadata()
-    df = DataFrame(
-        es_id   = [t[1] for t in ES_TAXONOMY],
-        label   = [t[2] for t in ES_TAXONOMY],
-        unit    = [t[3] for t in ES_TAXONOMY],
-        mac_eur = [MAC_PLACEHOLDER[t[1]] for t in ES_TAXONOMY],
-    )
-    return df
+function download_suts()
+    out = joinpath(RAW_DIR, "SUTs_time_series_all.zip")
+    if isfile(out) && filesize(out) > 100_000
+        @info "SUTs already downloaded ($(filesize(out)) bytes)"
+        return out
+    end
+    @info "Downloading INCA SUTs (national level, ~250KB)..."
+    Downloads.download(SUTS_URL, out)
+    @info "Downloaded $(filesize(out)) bytes"
+    return out
 end
 
-function build_R_matrix_stub(n_sectors::Int=64, n_regions::Int=240)
-    # Placeholder: R will be populated from INCA tables once downloaded.
-    E = length(ES_TAXONOMY)
-    N = n_sectors * n_regions
-    @warn "build_R_matrix_stub: returning zeros — replace with INCA data"
-    return zeros(E, N)
+# ---------------------------------------------------------------------------
+# SPATIAL: Per-ES map ZIPs (300-600MB each) — download sequentially
+# INCA 2021 update: adds year 2021 and improved maps
+# ---------------------------------------------------------------------------
+
+const ES_MAP_URLS = [
+    ("GLOBAL_CLIMATE_REGULATION", "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/GLOBAL_CLIMATE_REGULATION.zip"),
+    ("CROP_POLLINATION",          "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/CROP_POLLINATION.zip"),
+    ("WOOD_PROVISION",            "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/WOOD_PROVISION.zip"),
+    ("FLOOD_CONTROL",             "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/FLOOD_CONTROL.zip"),
+    ("AIR_FILTRATION",            "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/AIR_FILTRATION.zip"),
+    ("SOIL_RETENTION",            "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/SOIL_RETENTION.zip"),
+    ("CROP_PROVISION",            "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/CROP_PROVISION.zip"),
+    ("NATURE-BASED_TOURISM",      "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/MAES/INCA_2021_update/NATURE-BASED_TOURISM.zip"),
+]
+
+function download_es_maps(; force::Bool=false)
+    for (name, url) in ES_MAP_URLS
+        out = joinpath(RAW_DIR, "$(name).zip")
+        if !force && isfile(out) && filesize(out) > 100_000_000
+            @info "$name: already downloaded ($(round(filesize(out)/1e6))MB)"
+            continue
+        end
+        @info "Downloading $name (~300-600MB)..."
+        try
+            Downloads.download(url, out)
+            sz = filesize(out)
+            if sz < 10_000_000
+                @warn "$name: suspiciously small ($(sz) bytes) — may be corrupt, retry"
+            else
+                @info "$name: $(round(sz/1e6))MB ✓"
+            end
+        catch e
+            @warn "$name failed: $e"
+            @info "Retry with: curl -C - -o $out \"$url\""
+        end
+    end
 end
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-es_meta = build_es_metadata()
-CSV.write(joinpath(PROC_DIR, "es_metadata.csv"), es_meta)
-@info "Wrote es_metadata.csv"
+suts_path = download_suts()
 
-R = build_R_matrix_stub()
-# CSV.write(joinpath(PROC_DIR, "R_matrix.csv"), DataFrame(R, :auto))  # large file
-@info "R matrix stub shape: $(size(R))"
-@info "Next: run 04_run_model.jl after populating data/processed/ with real data."
+# Extract SUTs if not already done
+suts_dir = joinpath(RAW_DIR, "suts")
+if !isdir(suts_dir) || isempty(readdir(suts_dir))
+    @info "Extracting SUT CSVs..."
+    run(`unzip -o $suts_path -d $suts_dir`)
+end
+
+@info "SUT tables extracted to: $suts_dir"
+@info """
+
+Spatial map downloads (optional — needed for NUTS2 disaggregation):
+  Call download_es_maps() to download all map ZIPs sequentially (~3GB total).
+  These are large and slow — download overnight or on a fast connection.
+  WARNING: Do NOT run in parallel (causes corrupt ZIPs).
+
+  julia> include("scripts/03_process_inca.jl")
+  julia> download_es_maps()
+"""
+
+@info "Next: run 06_build_R_matrix.jl to build R from SUT tables."

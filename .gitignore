@@ -1,5 +1,7 @@
 # Data — raw files are too large for git; use scripts/ to reproduce
 data/raw/
+data/processed/
+data/results/
 
 # Julia
 Manifest.toml

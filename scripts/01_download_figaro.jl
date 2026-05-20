@@ -1,81 +1,77 @@
 """
-Script 01: Download FIGARO MRIO tables from Eurostat/JRC.
+Script 01: Download FIGARO MRIO tables.
 
-FIGARO-REG provides 64-sector × 240+ NUTS2 region trade matrices.
-Data is available at:
-  https://ec.europa.eu/eurostat/web/esa-supply-use-input-output-tables/figaro
+TWO DATA SOURCES — use both:
 
-Access: The national-level FIGARO tables are freely downloadable via the
-Eurostat bulk download facility. The NUTS2-disaggregated FIGARO-REG tables
-require registration with the JRC (contact: jrc-figaro@ec.europa.eu).
+A) FIGARO-REG (10 sectors × NUTS2 regions, 2017) — DIRECTLY DOWNLOADABLE
+   URL: https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/FIGARO-REG/2017/IOI_10SEC_D2.csv
+   Size: ~700MB. Format: flat CSV (REFREG, ROWII, COUNTERPARTREG, COLII, OBSVALUE).
+   Sectors: A, B_E, F, G_I, J, K, L, M_N, O_Q, R_U
+   After download, run scripts/05_build_figaro_mrio.jl to build A, F, x matrices.
 
-Outputs:
-  data/raw/figaro/  -- FIGARO ZIP files (national) or CSV (regional)
-  data/processed/figaro_A.csv       -- technical coefficient matrix
-  data/processed/figaro_F.csv       -- final demand vector
-  data/processed/figaro_x.csv       -- gross output vector
-  data/processed/figaro_metadata.json
+B) FIGARO national (64 sectors × 27+ countries, 2010-2022) — MANUAL DOWNLOAD
+   Location: CIRCABC platform → "Integrated Global Accounts Expert Group" → FIGARO database
+   URL: https://circabc.europa.eu  (search for "Integrated Global Accounts Expert Group")
+   Format: Parquet (full detail) + CSV + Excel (21-sector summary)
+   Contact: ESTAT-IGA@ec.europa.eu for access questions.
+   After download, place Parquet files in data/raw/figaro_national/
+
+Outputs (after running this script + 05_build_figaro_mrio.jl):
+  data/raw/figaro_reg/IOI_10SEC_D2.csv
+  data/processed/figaro_A_sparse.csv
+  data/processed/figaro_F.csv
+  data/processed/figaro_x.csv
+  data/processed/figaro_sectors.csv
 """
 
-using HTTP, Downloads, CSV, DataFrames, JSON3
+using Downloads
 using Pkg; Pkg.activate(joinpath(@__DIR__, ".."))
 
-const FIGARO_BASE_URL = "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/"
-const RAW_DIR = joinpath(@__DIR__, "..", "data", "raw", "figaro")
-const PROC_DIR = joinpath(@__DIR__, "..", "data", "processed")
+const FIGARO_REG_URL = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/FIGARO-REG/2017/IOI_10SEC_D2.csv"
+const RAW_DIR_REG    = joinpath(@__DIR__, "..", "data", "raw", "figaro_reg")
+const RAW_DIR_NAT    = joinpath(@__DIR__, "..", "data", "raw", "figaro_national")
 
-mkpath(RAW_DIR)
-mkpath(PROC_DIR)
-
-# ---------------------------------------------------------------------------
-# Step 1: Download national FIGARO tables (symmetric IO, product × product)
-# ---------------------------------------------------------------------------
-
-YEARS = [2019, 2020, 2021]  # update as new vintages are released
-
-function download_figaro_national(year::Int)
-    # Eurostat dataset code for symmetric IO tables: naio_10_cp1700
-    filename = "figaro_nat_$(year).csv"
-    outpath = joinpath(RAW_DIR, filename)
-    if isfile(outpath)
-        @info "Already downloaded: $filename"
-        return outpath
-    end
-    # TODO: replace with actual Eurostat API endpoint once confirmed
-    url = "$(FIGARO_BASE_URL)naio_10_cp1700?time=$(year)&format=CSV&lang=EN"
-    @info "Downloading FIGARO national $year..."
-    Downloads.download(url, outpath)
-    return outpath
-end
+mkpath(RAW_DIR_REG)
+mkpath(RAW_DIR_NAT)
 
 # ---------------------------------------------------------------------------
-# Step 2: Load and construct A, F, x matrices
+# Part A: FIGARO-REG (automatic download)
 # ---------------------------------------------------------------------------
 
-function build_leontief_inputs(year::Int)
-    path = joinpath(RAW_DIR, "figaro_nat_$(year).csv")
-    !isfile(path) && error("Run download step first: $path not found")
-    df = CSV.read(path, DataFrame)
+outpath = joinpath(RAW_DIR_REG, "IOI_10SEC_D2.csv")
 
-    # TODO: parse FIGARO format into Z (flows), x (output), F (final demand)
-    # FIGARO uses NACE Rev.2 codes; rows = supplying industries, cols = using industries
-    # Placeholder: return empty structures
-    @warn "build_leontief_inputs: parsing stub — implement once raw data format is confirmed"
-    return nothing
-end
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-for year in YEARS
+if isfile(outpath) && filesize(outpath) > 600_000_000  # ~700MB expected
+    @info "FIGARO-REG already downloaded: $(round(filesize(outpath)/1e6)) MB"
+else
+    @info "Downloading FIGARO-REG (~700MB, may take 10-15 minutes)..."
     try
-        download_figaro_national(year)
+        Downloads.download(FIGARO_REG_URL, outpath)
+        @info "Downloaded: $(round(filesize(outpath)/1e6)) MB"
     catch e
-        @warn "Could not download FIGARO $year: $e"
-        @info "Manual download: https://ec.europa.eu/eurostat/web/esa-supply-use-input-output-tables/figaro"
+        @warn "Download failed: $e"
+        @info "Try resuming with: curl -C - -o $outpath \"$FIGARO_REG_URL\""
     end
 end
 
-@info "FIGARO download script complete. Check data/raw/figaro/ for downloaded files."
-@info "Next: run 02_download_copernicus.jl"
+# ---------------------------------------------------------------------------
+# Part B: FIGARO national (manual)
+# ---------------------------------------------------------------------------
+
+@info """
+
+FIGARO national tables (64-sector, 2010-2022): MANUAL DOWNLOAD REQUIRED
+───────────────────────────────────────────────────────────────────────────
+1. Go to: https://circabc.europa.eu
+2. Search for public group: "Integrated Global Accounts Expert Group"
+3. Navigate to folder: FIGARO database
+4. Download the Parquet files for the years needed (2017 recommended)
+5. Place downloaded files in: $(RAW_DIR_NAT)/
+
+Once downloaded, a separate parsing script (to be written) will build
+the full 64-sector A matrix using Julia's Parquet.jl package.
+
+Contact for access: ESTAT-IGA@ec.europa.eu
+"""
+
+@info "FIGARO download script complete."
+@info "Next: run 05_build_figaro_mrio.jl to parse FIGARO-REG into model matrices."
