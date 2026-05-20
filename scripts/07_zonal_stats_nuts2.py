@@ -41,7 +41,7 @@ PROC_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "processed")
 # Using the 2018 'use' maps (physical units)
 ES_DEFS = [
     ("global_climate_regulation", "GLOBAL_CLIMATE_REGULATION",
-     "GLOBAL_CLIMATE_REGULATION/maps/use/global-climate-regulation_map_use_tonnes-CO2eq_2018.tif"),
+     "GLOBAL_CLIMATE_REGULATION/maps/use_sequestration/carbon-net-sequestration_map_use_tonnes_2018.tif"),
     ("crop_pollination",          "CROP_POLLINATION",
      "CROP_POLLINATION/maps/use/crop-pollination_map_use_tonnes_2018.tif"),
     ("wood_provision",            "WOOD_PROVISION",
@@ -55,7 +55,7 @@ ES_DEFS = [
     ("crop_provision",            "CROP_PROVISION",
      "CROP_PROVISION/maps/use/crop-provision_map_use_tonnes_2018.tif"),
     ("nature_based_tourism",      "NATURE-BASED_TOURISM",
-     "NATURE-BASED_TOURISM/maps/use/nature-based-tourism_map_use_visitors_2018.tif"),
+     "NATURE-BASED_TOURISM/maps/use/tourism_map_supply_amountOvernightStays_2018.tif"),
 ]
 
 RASTER_CRS = CRS.from_epsg(3035)
@@ -116,15 +116,26 @@ def zonal_sum_from_zip(zip_path: str, tif_subpath: str, nuts2_list: list) -> dic
     with tempfile.TemporaryDirectory() as tmpdir:
         # Extract only the needed TIF
         with zipfile.ZipFile(zip_path) as zf:
-            # Find matching file (exact name may vary slightly)
-            members = [m for m in zf.namelist() if tif_subpath.split("/")[-1] in m
-                       or (tif_subpath.split("/")[-2] in m and m.endswith("2018.tif")
-                           and "use" in m.split("/")[-2] if len(m.split("/")) > 2 else False)]
+            # Try exact filename match first
+            target_name = tif_subpath.split("/")[-1]
+            members = [m for m in zf.namelist() if m.endswith(target_name)]
             if not members:
-                # Fallback: find any 2018 use tif
+                # Fallback: any 2018 .tif whose parent dir is exactly "use" (not "use_something")
+                # Prefer files without -foreign or -national suffixes (pick totals)
+                candidates = [m for m in zf.namelist()
+                              if "2018" in m and m.endswith(".tif")
+                              and m.split("/")[-2] == "use"]
+                # Prefer total (no split suffix) over split files
+                totals = [m for m in candidates
+                          if not any(s in m for s in ["-foreign", "-national", "-domestic"])]
+                members = totals if totals else candidates
+            if not members:
+                # Broad fallback: any 2018 use-related tif in physical units
                 members = [m for m in zf.namelist()
-                           if "2018" in m and "use" in m and m.endswith(".tif")
-                           and "/use/" in m]
+                           if "2018" in m and m.endswith(".tif")
+                           and any(d in m.split("/") for d in ["use", "use_sequestration",
+                                                                "use_flow", "use_physical"])
+                           and "monetary" not in m]
             if not members:
                 print(f"  No 2018 use TIF found in {os.path.basename(zip_path)}")
                 return results
