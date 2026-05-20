@@ -121,16 +121,10 @@ open(RAW_PATH) do f
             push!(Z_J, col_j)
             push!(Z_V, val)
         elseif colii in FINAL_DEMAND
-            col_j = get(eu_idx, row_key, 0)  # allocate FD to origin region's row
-            # Final demand destination is in COUNTERPARTREG; allocate to that region
-            dest_key = (cpreg, rowii)  # treat as same sector in dest region
-            dest_j = get(eu_idx, dest_key, 0)
+            # F[i, fd] = final demand MET BY producer (refreg, rowii)
+            # row_i is already the index for (refreg, rowii)
             fd_col = fd_idx[colii]
-            if length(nuts2_regions) > 0 && haskey(eu_idx, (cpreg, rowii))
-                F[eu_idx[(cpreg, rowii)], fd_col] += val
-            elseif row_i > 0
-                F[row_i, fd_col] += val
-            end
+            F[row_i, fd_col] += val
         end
 
         lnum % 2_000_000 == 0 && @info "  Processed $(lnum ÷ 1_000_000)M rows..."
