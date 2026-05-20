@@ -1,0 +1,34 @@
+# Data — raw files are too large for git; use scripts/ to reproduce
+data/raw/
+
+# Julia
+Manifest.toml
+*.jl.cov
+*.jl.mem
+*.jl.*.cov
+.julia/
+
+# Quarto build artifacts
+_quarto/
+paper/.quarto/
+paper/_freeze/
+*.html
+paper/paper.pdf
+paper/figures/*.pdf
+paper/figures/*.png
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Jupyter / IRkernel
+.ipynb_checkpoints/
+
+# Logs
+*.log

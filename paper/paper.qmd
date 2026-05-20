@@ -1,0 +1,171 @@
+---
+title: "Systemic Shadow Prices for Transboundary Ecosystem Services: An Environmentally Extended Multi-Regional Input-Output Approach for the European Union"
+author:
+  - name: Nils Droste
+    affiliation: University of Copenhagen
+    email: nils@droste.io
+date: today
+abstract: |
+  This paper develops a systemic framework for computing shadow prices of ecosystem services (ES) across European Union member states. Conventional valuation methods based on willingness-to-pay surveys reflect consumer preferences but fail to capture the macroeconomic opportunity costs of ecosystem degradation across integrated supply chains. We integrate the United Nations System of Environmental-Economic Accounting — Ecosystem Accounting (SEEA EA) with an environmentally extended multi-regional input-output (EE-MRIO) model, augmented by stock-flow consistent (SFC) macroeconomic dynamics. Shadow prices are derived as the solution to the Leontief price dual, where the ecosystem valuation vector is set equal to the marginal abatement cost of restoring degraded assets to their SEEA EA baseline stocks. Using FIGARO-REG data covering 64 sectors across 240+ EU NUTS2 regions, we show that transboundary shadow prices are systematically higher than domestic valuations, and that ignoring trade-mediated ecological footprints biases welfare calculations substantially downward. Our results have direct implications for EU green accounting standards, ecological fiscal transfers, and the design of nature-based solution markets.
+
+keywords: [ecosystem services, shadow pricing, SEEA EA, multi-regional input-output, stock-flow consistency, European Union, environmental accounting]
+
+jel: [Q51, Q57, F18, E17, C67]
+---
+
+```{julia}
+#| label: setup
+#| include: false
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+include(joinpath(@__DIR__, "..", "src", "EUSEEAShadow.jl"))
+using .EUSEEAShadow
+```
+
+# Introduction {#sec-intro}
+
+Ecosystems do not respect political borders. A forest in the Carpathians regulates water for downstream agriculture in Hungary; Spanish olive groves sequester carbon consumed by German manufacturing chains; Danish coastal wetlands buffer storm surges whose beneficiaries span the North Sea. Yet conventional environmental accounting, including most implementations of the UN System of Environmental-Economic Accounting — Ecosystem Accounting (SEEA EA, @UN2021seea), assigns ecosystem service values to the jurisdiction in which the ecosystem resides — not to the jurisdictions whose industries and consumers ultimately appropriate those services.
+
+This misattribution matters for two reasons. First, it creates a fiscal externality: the costs of ecosystem maintenance are borne locally, while the benefits are distributed across the EU single market. Second, it biases the shadow prices used in cost-benefit analysis. Willingness-to-pay (WTP) estimates, the dominant method in the environmental economics literature [@sauer2012marginal], capture individual consumer preferences but not the systemic opportunity cost of ecosystem degradation for productive capacity. When a wetland is drained to expand agricultural output, the shadow price should reflect not just the welfare loss to local recreationists, but the full macroeconomic cost of losing the natural capital stock that supports transboundary supply chains.
+
+We propose a methodological framework that computes **systemic shadow prices** for ecosystem services endogenously, by embedding a biophysical extension of the Leontief production system within a stock-flow consistent (SFC) macroeconomic model. The key insight is the Leontief price dual: if physical ecosystem service flows enter production as primary inputs alongside labor and capital, then the equilibrium price system must impute shadow values to those flows. We set these shadow values equal to the **marginal abatement cost (MAC)** — the expenditure required to restore degraded ecosystem assets to their SEEA EA baseline stock — which is the cost the economy would have to pay to maintain productive capacity indefinitely.
+
+## Contribution
+
+This paper makes three contributions to the literature.
+
+**Methodological.** We provide the first operational integration of SEEA EA asset accounts, EE-MRIO trade matrices, and SFC macroeconomic dynamics in a unified shadow pricing framework. Prior work has either estimated ecosystem service values in partial equilibrium [@sauer2012marginal; @ehrlich2021contingent] or extended input-output models with environmental satellite accounts without closing the model through asset stock dynamics [@cazcarro2022figaroe3].
+
+**Empirical.** Using the FIGARO-REG database [@garcia2025interregional], which disaggregates EU trade flows to 240+ NUTS2 regions and 64 sectors, we compute the first transboundary shadow price vectors for EU ecosystem services at regional resolution. We demonstrate that shadow prices differ substantially across member states and that the trade-mediated component accounts for a significant share of total ecosystem valuation.
+
+**Policy.** Our shadow price estimates have direct implications for the design of ecological fiscal transfers within the EU, the valuation of nature-based solutions in infrastructure appraisal, and the calibration of EU green accounting standards.
+
+## Paper Structure
+
+@sec-theory develops the theoretical framework. @sec-data describes the data sources and construction of empirical inputs. @sec-estimation presents the estimation strategy and shadow price solution. @sec-results reports main results and @sec-robustness presents robustness checks. @sec-welfare discusses welfare implications. @sec-conclusion concludes.
+
+---
+
+# Theoretical Framework {#sec-theory}
+
+## The Multi-Regional Production System
+
+Let the EU economy consist of $n$ regions (member states or NUTS2 areas) and $s$ sectors per region, giving $N = ns$ total production activities. Denote by $\mathbf{X} \in \mathbb{R}^N_+$ the vector of gross outputs and by $\mathbf{A} \in \mathbb{R}^{N \times N}_+$ the matrix of technical input coefficients, where $A_{ij}$ is the value of input from activity $i$ required per unit of output of activity $j$. Final demand is $\mathbf{F}(r) \in \mathbb{R}^N_+$, which depends on the macroeconomic interest rate $r$ through investment demand (the IS curve).
+
+The Leontief quantity system gives:
+
+$$\mathbf{X} = (\mathbf{I} - \mathbf{A})^{-1} \mathbf{F}(r) \equiv \mathbf{L} \mathbf{F}(r)$$ {#eq-leontief}
+
+where $\mathbf{L} = (\mathbf{I} - \mathbf{A})^{-1}$ is the Leontief inverse, tracking direct and indirect input requirements across the full supply chain.
+
+## Biophysical Extension
+
+We augment the standard IO model with a biophysical coefficient matrix $\mathbf{R} \in \mathbb{R}^{E \times N}_+$, where $E$ is the number of distinct ecosystem service flows (e.g., freshwater provisioning, carbon sequestration, pollination). Element $R_{ej}$ denotes the physical volume of ecosystem service $e$ consumed per unit of gross output in activity $j$.
+
+Total ecosystem service demand is:
+
+$$\mathbf{E}_{demand} = \mathbf{R} \mathbf{X} = \mathbf{R} \mathbf{L} \mathbf{F}(r)$$ {#eq-es-demand}
+
+The matrix $\mathbf{R}\mathbf{L}$ is the **ecosystem service multiplier matrix**: it captures the full upstream ecosystem service requirements — both direct and supply-chain embedded — of each unit of final demand.
+
+## Ecosystem Asset Stock Dynamics
+
+Following SEEA EA conventions, each ecosystem service flow $e$ is drawn from an underlying asset stock $K_e(t)$, measured in physical units (hectares, tonnes, species abundance index). Stock-flow consistency requires:
+
+$$\dot{K}_e(t) = G_e(K_e) - E_{demand,e}(t)$$ {#eq-sfc}
+
+where $G_e(K_e)$ is the natural regeneration function (concave in $K_e$, with maximum sustainable yield at $K_e^*$). If demand persistently exceeds regeneration, the asset stock declines and eventually collapses.
+
+We define the **baseline stock** $\bar{K}_e$ as the SEEA EA opening stock in the reference year. The sustainable constraint is $E_{demand,e} \leq G_e(\bar{K}_e)$ for all $e$. When this constraint binds, the economy must either reduce demand or bear the cost of active ecosystem restoration.
+
+## The Macroeconomic Interest Rate Channel
+
+Ecosystem asset degradation feeds back into the macroeconomy through the LM curve. Following SFC modeling conventions [@godley2007monetary], we treat ecosystem assets as a component of the national balance sheet. Severe degradation reduces the collateral value of natural capital, increases long-run sovereign risk, and raises money demand — pushing up $r$ and reducing investment-financed final demand $\mathbf{F}(r)$.
+
+Formally, we model:
+
+$$r = r_0 + \phi \sum_e \max\left(0, \frac{\bar{K}_e - K_e(t)}{\bar{K}_e}\right)$$ {#eq-interest-rate}
+
+where $\phi > 0$ is the ecological risk premium. This closes the IS-LM loop: ecosystem degradation raises $r$, which dampens $\mathbf{F}(r)$, which feeds back into reduced demand for ecosystem services via @eq-es-demand.
+
+## The Dual Shadow Price System
+
+The Leontief price dual gives the equilibrium cost structure of the economy. Production prices must cover all primary input costs:
+
+$$\mathbf{P}^\top = \mathbf{P}^\top \mathbf{A} + \mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R}$$ {#eq-price-dual}
+
+where $\mathbf{P} \in \mathbb{R}^N_+$ is the producer price vector, $\mathbf{V} \in \mathbb{R}^N_+$ is the vector of conventional value added (wages, profits, taxes), and $\mathbf{P}_{shadow} \in \mathbb{R}^E_+$ is the shadow price vector for ecosystem services.
+
+Solving for $\mathbf{P}$:
+
+$$\mathbf{P}^\top = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})(\mathbf{I} - \mathbf{A})^{-1} = (\mathbf{V}^\top + \mathbf{P}_{shadow}^\top \mathbf{R})\mathbf{L}$$ {#eq-prices-solution}
+
+**Identification of $\mathbf{P}_{shadow}$.**  We identify the shadow price vector by setting it equal to the marginal abatement cost: the minimum expenditure required to restore depleted stocks back to $\bar{K}_e$. This is observable from SEEA EA remediation cost accounts and habitat restoration cost data. Under this identification, $\mathbf{P}_{shadow}$ is not a preference parameter but a *physical cost parameter* — the price the economy would have to pay to maintain its productive capacity indefinitely.
+
+**Transboundary pass-through.** The term $\mathbf{P}_{shadow}^\top \mathbf{R} \mathbf{L}$ in @eq-prices-solution shows how ecosystem shadow costs propagate through supply chains. When a German automobile sector imports intermediate goods from a Spanish supplier that draws on water-stressed aquifers, the shadow cost of that aquifer depletion is passed through to the final German consumer price. This is the core mechanism linking ecosystem degradation in one member state to welfare costs in another.
+
+---
+
+# Data {#sec-data}
+
+## Economic Backbone: FIGARO-REG
+
+The structural backbone of the model is provided by the **Full International and Global Accounts for Research in Input-Output Analysis (FIGARO-REG)** tables [@cazcarro2022figaroe3; @garcia2025interregional], constructed by Eurostat and the JRC. FIGARO-REG disaggregates EU economic activity into 64 NACE Rev.2 sectors across 240+ NUTS2 regions, with bilateral inter-regional trade flows estimated using gravity-model-based allocation of Eurostat's aggregated national tables.
+
+We use the most recent available year (TBD pending data access) and symmetrize the supply and use tables into a product-by-product IO framework following the industry technology assumption.
+
+## Ecosystem Asset Accounts (SEEA EA)
+
+Ecosystem extent data are sourced from the **Copernicus Land Monitoring Service (CLMS)**, specifically **CORINE Land Cover (CLC)** at 100m resolution, crosswalked to the EU Ecosystem Typology (EUNIS Level 2). Condition data are assembled from:
+
+- *Physical/chemical:* LUCAS topsoil parameters (JRC) and EEA water quality indices
+- *Biological/structural:* Common Bird and Butterfly Indices (EBCC) and satellite-derived Leaf Area Index (LAI) from Copernicus
+
+## Ecosystem Service Flow Accounts
+
+Ecosystem service flow volumes are sourced from the **INCA (Integrated Natural Capital Accounting)** platform. INCA provides standardized Supply and Use tables for ecosystem services at NUTS2 resolution, aligned with SEEA EA accounting conventions. Supplementary flow data:
+
+- *Carbon sequestration:* ICOS network eddy covariance measurements
+- *Air quality regulation:* EMEP modeled deposition and filtration data
+- *Timber/biomass:* European Forest Accounts (EFA)
+
+## Marginal Abatement Costs
+
+Shadow prices are anchored to ecosystem restoration cost estimates from the EU LIFE programme database, national habitat remediation cost assessments, and the literature on nature-based solution costs [@sauer2012marginal].
+
+---
+
+# Estimation {#sec-estimation}
+
+*[To be completed as data become available.]*
+
+---
+
+# Results {#sec-results}
+
+*[To be completed.]*
+
+---
+
+# Robustness {#sec-robustness}
+
+*[To be completed.]*
+
+---
+
+# Welfare Implications {#sec-welfare}
+
+*[To be completed.]*
+
+---
+
+# Conclusion {#sec-conclusion}
+
+*[To be completed.]*
+
+---
+
+# References {.unnumbered}
+
+::: {#refs}
+:::

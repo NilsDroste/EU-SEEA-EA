@@ -1,0 +1,152 @@
+---
+title: "01 — Data Exploration"
+subtitle: "FIGARO MRIO + INCA Ecosystem Accounts"
+author: "Nils Droste"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    fig-width: 9
+    fig-height: 6
+execute:
+  echo: true
+  warning: false
+---
+
+```{julia}
+#| label: setup
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+# include("../src/EUSEEAShadow.jl")
+# using .EUSEEAShadow
+using CSV, DataFrames, Statistics, LinearAlgebra
+```
+
+## Overview
+
+This notebook explores the raw and processed data before model estimation.
+Sections:
+
+1. FIGARO MRIO structure — sector and regional coverage
+2. Ecosystem extent (CORINE Land Cover) — asset stock baseline
+3. Ecosystem service flows (INCA) — R matrix construction
+4. Marginal abatement costs — P_shadow identification
+
+---
+
+## 1. FIGARO MRIO Structure
+
+```{julia}
+#| label: figaro-check
+proc_dir = joinpath(@__DIR__, "..", "data", "processed")
+
+# Check which processed files exist
+for f in ["figaro_A_2019.csv", "figaro_F_2019.csv", "figaro_x_2019.csv"]
+    path = joinpath(proc_dir, f)
+    status = isfile(path) ? "✓ found" : "✗ missing"
+    println("$f: $status")
+end
+```
+
+```{julia}
+#| label: figaro-summary
+#| eval: false  # enable after data download
+
+A = Matrix(CSV.read(joinpath(proc_dir, "figaro_A_2019.csv"), DataFrame, header=false))
+println("A matrix: $(size(A))")
+println("Column sums (should be ≤ 1): ", round.(sum(A, dims=1)[1:5], digits=3))
+```
+
+---
+
+## 2. Ecosystem Extent — CORINE Land Cover
+
+```{julia}
+#| label: clc-check
+clc_path = joinpath(@__DIR__, "..", "data", "processed", "ecosystem_extent.csv")
+if isfile(clc_path)
+    extent = CSV.read(clc_path, DataFrame)
+    println("Extent table: $(size(extent)) rows × cols")
+    println(first(extent, 5))
+else
+    println("ecosystem_extent.csv not yet generated — run script 02.")
+end
+```
+
+---
+
+## 3. Ecosystem Service Flows — INCA R Matrix
+
+```{julia}
+#| label: inca-metadata
+meta_path = joinpath(@__DIR__, "..", "data", "processed", "es_metadata.csv")
+if isfile(meta_path)
+    meta = CSV.read(meta_path, DataFrame)
+    println(meta)
+else
+    println("es_metadata.csv not yet generated — run script 03.")
+end
+```
+
+```{julia}
+#| label: R-heatmap
+#| eval: false  # enable after data available
+
+using Plots
+R = Matrix(CSV.read(joinpath(proc_dir, "R_matrix.csv"), DataFrame, header=false))
+heatmap(log1p.(R), title="log(1 + R): ES intensity by sector",
+        xlabel="Sector-region", ylabel="Ecosystem service",
+        yticks=(1:size(R,1), meta.label))
+```
+
+---
+
+## 4. Marginal Abatement Costs
+
+```{julia}
+#| label: mac-summary
+if isfile(meta_path)
+    meta = CSV.read(meta_path, DataFrame)
+    sort!(meta, :mac_eur, rev=true)
+    println(select(meta, :label, :unit, :mac_eur))
+end
+```
+
+---
+
+## 5. Toy Model Validation
+
+```{julia}
+#| label: toy-model
+include(joinpath(@__DIR__, "..", "src", "EUSEEAShadow.jl"))
+using .EUSEEAShadow
+
+Z = [0.1 0.05 0.02 0.01;
+     0.08 0.12 0.01 0.03;
+     0.03 0.01 0.15 0.06;
+     0.02 0.02 0.07 0.10]
+x = [1.0, 1.2, 0.9, 1.1]
+F = x .- vec(sum(Z, dims=2))
+m = MRIOModel(Z, x, F, ["R1","R2"], ["S1","S2"])
+
+L = leontief_inverse(m)
+X = total_output(m)
+println("Leontief inverse (L):")
+display(round.(L, digits=3))
+println("\nGross output X: ", round.(X, digits=3))
+```
+
+```{julia}
+#| label: shadow-price-toy
+R_toy = [0.1 0.05 0.08 0.03;
+         0.02 0.04 0.01 0.06]
+ea = EcosystemAccounts(R_toy, [10.0, 5.0], [0.5, 0.25],
+                        ["Carbon seq.", "Water purif."], [80.0, 120.0])
+
+V  = X .* 0.4
+result = solve_shadow_prices(ea, m, V)
+
+println("Shadow prices: ", result.P_shadow)
+println("Passthrough (per unit final demand): ", round.(vec(result.passthrough), digits=4))
+```

@@ -1,0 +1,39 @@
+project:
+  type: article
+
+format:
+  pdf:
+    documentclass: article
+    classoption: [12pt, a4paper]
+    geometry:
+      - top=2.5cm
+      - bottom=2.5cm
+      - left=3cm
+      - right=3cm
+    fontfamily: lmodern
+    linestretch: 1.5
+    number-sections: true
+    colorlinks: true
+    keep-tex: false
+    include-in-header:
+      text: |
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \usepackage{caption}
+        \usepackage{subcaption}
+        \usepackage{float}
+        \usepackage{siunitx}
+        \usepackage{natbib}
+        \bibliographystyle{aer}
+
+bibliography: references.bib
+csl: https://www.zotero.org/styles/american-economic-review
+
+execute:
+  echo: false
+  warning: false
+  cache: true
+
+knitr:
+  opts_chunk:
+    fig.pos: "H"
